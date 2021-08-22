@@ -486,9 +486,9 @@ function compare(obj1, obj2) {
 
 // 发送邮件函数
 async function sendMail(text) {
-  var user = "3301833942@qq.com"; //自己的邮箱
-  var pass = "sowgczwiqeeudcbf"; //qq邮箱授权码,如何获取授权码请百度
-  var to = "airhua_byte@163.com"; //对方的邮箱
+  var user = "你的邮箱"; //自己的邮箱
+  var pass = "邮箱授权码"; //qq邮箱授权码,如何获取授权码请百度
+  var to = ""; //对方的邮箱
   let transporter = nodemailer.createTransport({
     host: "smtp.qq.com",
     port: 587,
