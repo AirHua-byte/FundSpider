@@ -556,8 +556,13 @@ function compare(obj1, obj2) {
 
 // 发送邮件函数
 async function sendMail(text) {
+<<<<<<< HEAD
   var user = ""; //自己的邮箱
   var pass = ""; //qq邮箱授权码,如何获取授权码请百度
+=======
+  var user = "你的邮箱"; //自己的邮箱
+  var pass = "邮箱授权码"; //qq邮箱授权码,如何获取授权码请百度
+>>>>>>> 4bd2ba172b73b85b02c1b7a17464c6049dec69a3
   var to = ""; //对方的邮箱
   let transporter = nodemailer.createTransport({
     host: "smtp.qq.com",
@@ -629,7 +634,11 @@ schedule.scheduleJob({
   html += `</tbody>
         </table>`
   sendMail();
+<<<<<<< HEAD
   html = '';
   fundSpider.downFundArr = [];
   fundSpider.upFundArr = [];
 });
+=======
+});
+>>>>>>> 4bd2ba172b73b85b02c1b7a17464c6049dec69a3
