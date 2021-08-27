@@ -33,33 +33,38 @@ app.get('/', function (req, res) {
 });
 app.get('/fetchFundCodes', (req, res) => {
   let fundSpider = new FundSpider();
-  // res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Origin", "*");
   fundSpider.fetchFundCodes((err, data) => {
     res.send(data.toString());
   });
 });
 app.get('/fetchFundInfo/:code', (req, res) => {
   let fundSpider = new FundSpider();
-  // res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Origin", "*");
   fundSpider.fetchFundInfo(req.params.code, (err, data) => {
     res.send(JSON.stringify(data));
   });
 });
-app.get('/fetchFundData/:code/:per/:page', (req, res) => {
+app.get('/fetchFundData/:code/:stage', (req, res) => {
   let fundSpider = new FundSpider();
-  // res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Origin", "*");
   console.log(req.params)
-  fundSpider.fetchFundData(req.params.code, undefined, undefined, req.params.per, req.params.page, (err, data) => {
+  fundSpider.fetchFundData(req.params.code, req.params.stage, (err, data) => {
     res.send(JSON.stringify(data));
   });
 });
 app.get('/Fundstage/:code', (req, res) => {
   let fundSpider = new FundSpider();
-  // res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Origin", "*");
   console.log(req.params)
   fundSpider.fetchFundCodeInfo(req.params.code, (err, data) => {
     res.send(JSON.stringify(data));
   });
+});
+app.get('/fundtarget', (req, res) => {
+  let fundSpider = new FundSpider();
+  res.header("Access-Control-Allow-Origin", "*");
+  res.send([...Up,...Down])  
 });
 
 app.listen(1234, () => {
@@ -72,6 +77,7 @@ class FundSpider {
     this.fragmentSize = fragmentSize;
     this.upFundArr = [];
     this.downFundArr = [];
+    this.pages = 5;
   }
 
   // v1.0代码 废弃
@@ -160,53 +166,64 @@ class FundSpider {
     let SixAmout = Number(data.stageAmout['近6月'].replace(/%/g, ''));
     let YearAmout = Number(data.stageAmout['近1年'].replace(/%/g, ''));
     let EvenAmout = Number(data.stageAmout['近3年'].replace(/%/g, ''));
-    if (flag > 8 && YearAmout > 40 && SixAmout > 30) {
+    if (flag > 10 && YearAmout > 40 && SixAmout > 30 && WeekAmout > 0) {
       this.fetchFundInfo(code, (err, fundData) => {
-        var str = fundData.assetScale;
-        var patt1 = /^(-?\d+)(\.\d+)/g;
-        var num = str.match(patt1);
-        if (parseFloat(num) > 10) {
-          console.log('代码：', code, '涨幅：', flag);
-          this.upFundArr.push({
-            code: code,
-            Trend: flag
-          })
+        if(!err){
+          var str = fundData.assetScale;
+          console.log(str);
+          var patt1 = /^(-?\d+)(\.\d+)/g;
+          var num = str.match(patt1);
+          if (parseFloat(num) > 10) {
+            console.log('代码：', code, '近一月涨幅：', flag);
+            this.upFundArr.push({
+              code: code,
+              Trend: flag + '%',
+              fundName: fundData.fundName,
+              Url: "http://fund.eastmoney.com/"+ code +".html"
+            })
+          }
         }
       })
     }
-    if (WeekAmout < -7 && EvenAmout > 100 && ThreeAmout > 0) {
+    if (WeekAmout < -5 && EvenAmout > 100 && flag < -10 && ThreeAmout > 30) {
       this.fetchFundInfo(code, (err, fundData) => {
-        var str = fundData.assetScale;
-        var patt1 = /^(-?\d+)(\.\d+)/g;
-        var num = str.match(patt1);
-        if (parseFloat(num) > 10) {
-          console.log('代码：', code, '下跌：', WeekAmout);
-          this.downFundArr.push({
-            code: code,
-            Trend: WeekAmout
-          })
+        if(!err){
+          var str = fundData.assetScale;
+          var patt1 = /^(-?\d+)(\.\d+)/g;
+          var num = str.match(patt1);
+          if (parseFloat(num) > 10) {
+            console.log('代码：', code, '下跌：', WeekAmout);
+            this.downFundArr.push({
+              code: code,
+              Trend: WeekAmout + '%',
+              fundName: fundData.fundName,
+              Url: "http://fund.eastmoney.com/"+ code +".html"
+            })
+          }
         }
       })
     }
   }
 
-  fetch(url, coding, callback) {
-    request({
-      url: url,
-      encoding: null
-    }, (error, response, body) => {
-      let _body = '';
-      if (body) {
-        _body = coding === "utf-8" ? body : iconv.decode(Buffer.from(body), coding);
-      }
-      if (!error && response.statusCode === 200 && _body) {
-        callback(null, cheerio.load('<body>' + _body + '<body>'));
-      } else {
-        setTimeout(() => {
-          this.fetch(url, coding, callback)
-        }, 10000)
-        // callback(error, cheerio.load('<body></body>'));
-      }
+   fetch(url, coding, callback) {
+    return new Promise((resolve)=>{
+      request({
+        url: url,
+        encoding: null
+      },  (error, response, body) => {
+        let _body = '';
+        
+        if (body) {
+          _body = coding === "utf-8" ? body : iconv.decode(Buffer.from(body), coding);
+        }
+        if (!error && response.statusCode === 200 && _body) {
+          callback(null, cheerio.load('<body>' + _body + '<body>'));
+          resolve();
+        } else {
+          callback(error, cheerio.load('<body></body>'));
+          resolve();
+        }
+      })
     })
   }
 
@@ -316,10 +333,15 @@ class FundSpider {
     return y + '-' + m + '-' + d;
   }
 
-  fetchFundUrl(url, callback) {
+  // v1.1代码，已废弃
+  /*  fetchFundUrl(url, callback) {
     this.fetch(url, 'gb2312', (err, $) => {
       let fundData = [];
       if (!err) {
+        let bodyText = $('body').text().split('pages')[1];
+        var patt1 = /[0-9]+/g;
+        let pages = bodyText.match(patt1)[0];
+        let curpage = bodyText.match(patt1)[1];
         let table = $('body').find('table');
         let tbody = table.find('tbody');
 
@@ -342,18 +364,66 @@ class FundSpider {
         }
       }
     })
-  }
+  } */
 
-  fetchFundData(code, sdate, edate, per = 7, page = 1, callback) {
+   async fetchFundData(code, stage, callback) {
     // &code=000001&sdate=2015-05-05&edate=2018-05-05&per=10
     let fundUrl = "https://fundf10.eastmoney.com/F10DataApi.aspx?type=lsjz";
     let date = new Date();
     let dateNow = new Date();
+    let sdate = '';
+    let edate = '';
 
-    sdate = sdate ? sdate : this.getDataStr(new Date(date.setFullYear(date.getFullYear() - 3)));
-    edate = edate ? edate : this.getDataStr(dateNow);
-    fundUrl += ("&code=" + code + "&sdate=" + sdate + "&edate=" + edate + "&per=" + per + "&page=" + page);
-    this.fetchFundUrl(fundUrl, callback);
+    if(stage == 'oneweek'){
+      sdate = this.getDataStr(new Date(date.setMonth(date.getMonth(),date.getDate() - 7)));
+      edate = this.getDataStr(dateNow);
+    }
+    if(stage == 'onemonth'){
+      sdate = this.getDataStr(new Date(date.setMonth(date.getMonth() - 1)));
+      edate = this.getDataStr(dateNow);
+    }
+    if(stage == 'threemonth'){
+      sdate = this.getDataStr(new Date(date.setMonth(date.getMonth() - 3)));
+      edate = this.getDataStr(dateNow);
+    }
+    if(stage == 'oneyear'){
+      sdate = this.getDataStr(new Date(date.setFullYear(date.getFullYear() - 1)));
+      edate = this.getDataStr(dateNow);
+    }
+    if(stage == 'threeyear'){
+      sdate = this.getDataStr(new Date(date.setFullYear(date.getFullYear() - 3)));
+      edate = this.getDataStr(dateNow);
+    }
+
+    
+    let fundData = [];
+    let curpage = 1;
+    for(let curpage=1;curpage<=this.pages;curpage++){
+      fundUrl += ("&code=" + code + "&sdate=" + sdate + "&edate=" + edate + "&page=" + curpage);
+      await this.fetch(fundUrl, 'gb2312', (err, $) => {
+        if (!err) {
+          let bodyText = $('body').text().split('pages')[1];
+          let patt1 = /[0-9]+/g;
+          this.pages = bodyText.match(patt1)[0];
+          let table = $('body').find('table');
+          let tbody = table.find('tbody');
+  
+          tbody.find("tr").each((i, trItem) => {
+            let fundItem = {};
+            let tdArray = $(trItem).find("td").map((j, tdItem) => {
+              return $(tdItem);
+            })
+            fundItem.date = tdArray[0].text();
+            fundItem.unitNet = tdArray[1].text();
+            fundItem.accumulatedNet = tdArray[2].text();
+            fundItem.changePercent = (tdArray[3].text().indexOf('%') > -1) ? tdArray[3].text() : '';
+            fundData.push(fundItem);
+          });
+        }
+      })
+      fundUrl = 'https://fundf10.eastmoney.com/F10DataApi.aspx?type=lsjz';
+    }
+    callback('err', fundData);
   }
 
   fundFragmentSave(codesArray) {
@@ -486,9 +556,9 @@ function compare(obj1, obj2) {
 
 // 发送邮件函数
 async function sendMail(text) {
-  var user = "3301833942@qq.com"; //自己的邮箱
-  var pass = "sowgczwiqeeudcbf"; //qq邮箱授权码,如何获取授权码请百度
-  var to = "airhua_byte@163.com"; //对方的邮箱
+  var user = ""; //自己的邮箱
+  var pass = ""; //qq邮箱授权码,如何获取授权码请百度
+  var to = ""; //对方的邮箱
   let transporter = nodemailer.createTransport({
     host: "smtp.qq.com",
     port: 587,
@@ -511,12 +581,13 @@ async function sendMail(text) {
 let Up = [];
 let Down = [];
 let html = '';
-let fundSpider = new FundSpider(200);
+let fundSpider = new FundSpider(20);
+// fundSpider.TrendFund();
 
 //定时发送
 schedule.scheduleJob({
   hour: 10,
-  minute: 08
+  minute: 00
 }, function () {
   fundSpider.TrendFund();
   console.log("启动任务:" + new Date());
@@ -558,4 +629,7 @@ schedule.scheduleJob({
   html += `</tbody>
         </table>`
   sendMail();
+  html = '';
+  fundSpider.downFundArr = [];
+  fundSpider.upFundArr = [];
 });
