@@ -585,7 +585,7 @@ class FundSpider {
             </div>`
 
             var user = "airhua_byte@163.com"; //自己的邮箱
-            var pass = "KFSXWZEOTIWSVZCI"; //qq邮箱授权码,如何获取授权码请百度
+            var pass = "xxxx"; //qq邮箱授权码,如何获取授权码请百度
             var to = email; //对方的邮箱
             let transporter = nodemailer.createTransport({
               host: "smtp.163.com",

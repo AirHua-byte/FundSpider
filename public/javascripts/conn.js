@@ -3,8 +3,8 @@ const mysql = require('mysql');
 // 创建数据库连接对象
 var conn = mysql.createConnection({
   host: 'localhost',
-  user: 'root',
-  password: 'root',
+  user: 'xxxx',
+  password: 'xxxx',
   database: 'fund',
   useConnectionPooling: true
 })
