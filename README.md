@@ -1,4 +1,19 @@
 # FundSpider
+
+前端代码重构上传在了`fund-view`
+
+#### 项目体验地址: [fund.huabyte.com](https://fund.huabyte.com)
+
+部分界面截图：
+
+![1](https://assets.huabyte.com/blog/image/fund3.png)
+
+![2](https://assets.huabyte.com/blog/image/fun2.png)
+
+![2](https://assets.huabyte.com/blog/image/fund1.png)
+
+
+
 ## 接口说明
 
 ### 无需登录
